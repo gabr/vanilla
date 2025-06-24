@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
+        .avatar {
+            border-radius: 50%;
+        }
+        .counterButton {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -34,30 +40,99 @@
     }
 
     class App extends Component {
-        constructor(root) {
+        constructor(root, user) {
+            if (!user) {
+                super(root, '<div><h1>Log in...</h1> </div>');
+                return;
+            }
+            console.assert(user.name);
+            console.assert(user.imageUrl);
+            console.assert(user.imageSize);
             super(root, `
                 <div>
-                    <c button var=b1></c>
-                    <c button var=b2></c>
+                    <h1>${user.name}</h1>
+                    <img
+                        class=avatar
+                        src=${user.imageUrl}
+                        alt=${'Photo of ' + user.name}
+                        style=${`
+                            width:  ${user.imageSize};
+                            height: ${user.imageSize};
+                        `}
+                    >
+
+                    <c var=shoppingList></c>
+
+                    <c var=counter1></c>
+                    <c var=counter2></c>
+                    <c var=reset></c>
                 </div>
             `);
-            this.b1 = new Button(this.var.b1, "Button 1");
-            this.b2 = new Button(this.var.b2, "Button 2");
-            this.b1.onClick = () => alert('b1');
-            this.b2.onClick = () => alert('b2');
+
+            const products = [
+              { title: 'Cabbage', isFruit: false, id: 1 },
+              { title: 'Garlic',  isFruit: false, id: 2 },
+              { title: 'Apple',   isFruit: true,  id: 3 },
+            ];
+            this.shoppingList = new ShoppingList(this.var.shoppingList, products);
+
+            this.counter1 = new CounterButton(this.var.counter1);
+            this.counter2 = new CounterButton(this.var.counter2);
+
+            this.resetButton = new MyButton(this.var.reset, "reset", () => {
+                this.counter1.setCounter(0);
+                this.counter2.setCounter(0);
+            });
         }
     };
 
-    class Button extends Component {
-        onClick = null;
-
-        constructor(root, name) {
-            console.assert(name);
-            super(root, `<button></button>`);
-            this.root.innerText = name;
-            this.root.addEventListener('click', () => this.onClick?.call());
+    class ShoppingList extends Component {
+        constructor(root, products) {
+            super(root, `
+                <ul>
+                    ${products.map(p => `
+                        <li style="color: ${(p.isFruit ? 'magenta' : 'darkgreen')}" >
+                            ${p.title}
+                        </li>
+                    `).join('\n')}
+                </ul>
+            `);
         }
     }
 
-    const app = new App(document.querySelector('c[app]'));
+    class MyButton extends Component {
+        constructor(root, text, onClick) {
+            super(root, `<button>${text}</button>`);
+            this.root.addEventListener('click', () => {
+                if (onClick) onClick()
+                else this.handleClick();
+            });
+        }
+
+        handleClick() {
+            alert('You clicked me!');
+        }
+    }
+
+    class CounterButton extends Component {
+        constructor(root) {
+            super(root, `<button class=counterButton></button>`);
+            this.counter = 0;
+            this.setCounter(this.counter);
+            this.root.addEventListener('click', () => this.setCounter(++this.count));
+        }
+
+        setCounter(value) {
+            this.count = value;
+            this.root.innerText = `Clicked ${value} times`;
+        }
+    }
+
+    const user = {
+      name: 'Hedy Lamarr',
+      imageUrl: 'https://i.imgur.com/yXOvdOSs.jpg',
+      imageSize: 90,
+    };
+
+    const app = new App(document.querySelector('c[app]'), user);
 </script>
