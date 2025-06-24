@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <c app></c>
+</body>
+<script>
+    class Component {
+        constructor(root, html) {
+            console.assert(root);
+            console.assert(html);
+            const body = new DOMParser().parseFromString(html, 'text/html').body;
+            if (body.children.length > 1)
+                throw new Error(`More than one child in:\n${html}`);
+            this.root = body.firstChild;
+            for (const attr of this.root.attributes)
+                this.root.setAttribute(attr.nodeName, attr.nodeValue);
+            root.replaceWith(this.root);
+            this.var = {};
+            for (const varel of this.root.querySelectorAll('[var]')) {
+                const varname = varel.getAttribute('var');
+                if (this.var[varname])
+                    console.error(`var name duplicate: '${varname}'`);
+                else
+                    this.var[varname] = varel;
+            }
+        }
+    }
+
+    class App extends Component {
+        constructor(root) {
+            super(root, `
+                <div>
+                    <c button var=b1></c>
+                    <c button var=b2></c>
+                </div>
+            `);
+            this.b1 = new Button(this.var.b1, "Button 1");
+            this.b2 = new Button(this.var.b2, "Button 2");
+            this.b1.onClick = () => alert('b1');
+            this.b2.onClick = () => alert('b2');
+        }
+    };
+
+    class Button extends Component {
+        onClick = null;
+
+        constructor(root, name) {
+            console.assert(name);
+            super(root, `<button></button>`);
+            this.root.innerText = name;
+            this.root.addEventListener('click', () => this.onClick?.call());
+        }
+    }
+
+    const app = new App(document.querySelector('c[app]'));
+</script>
