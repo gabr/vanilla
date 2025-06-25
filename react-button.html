@@ -35,6 +35,27 @@
                     this.var[varname] = varel;
             }
         }
+
+        mkstate(obj) {
+            const proxy = new Proxy(obj, {
+                set(obj, prop, newval, proxy) {
+                    const oldval = obj[prop];
+                    const res = Reflect.set(...arguments);
+                    for (const callback of proxy._subscribers)
+                        callback(oldval, newval);
+                    return res;
+                }
+            });
+            proxy._subscribers = [];
+            return proxy;
+        }
+
+        substate(obj, callback) {
+            if (!obj._subscribers)
+                obj = this.mkstate(obj);
+            obj._subscribers.push(callback);
+            return obj;
+        }
     }
 
     class App extends Component {
@@ -61,9 +82,17 @@
 
                     <embed var=shoppingList>
 
+                    <hr>
                     <embed var=counter1>
                     <embed var=counter2>
                     <embed var=reset>
+
+                    <hr>
+                    <embed class=sameCounter>
+                    <embed class=sameCounter>
+                    <embed class=sameCounter>
+                    <embed class=sameCounter>
+                    <embed var=sameReset>
                 </div>
             `);
 
@@ -74,13 +103,19 @@
             ];
             this.shoppingList = new ShoppingList(this.var.shoppingList, products);
 
-            this.counter1 = new CounterButton(this.var.counter1);
-            this.counter2 = new CounterButton(this.var.counter2);
+            this.counter1 = new CounterButton(this.var.counter1, { count: 0 });
+            this.counter2 = new CounterButton(this.var.counter2, { count: 0 });
 
             this.resetButton = new MyButton(this.var.reset, "reset", () => {
-                this.counter1.setCounter(0);
-                this.counter2.setCounter(0);
+                this.counter1.state.count = 0; this.counter1.update();
+                this.counter2.state.count = 0; this.counter2.update();
             });
+
+            this.commonState = super.mkstate({ count: 0 });
+            for (const sameCounter of this.root.querySelectorAll('.sameCounter'))
+                new CounterButton(sameCounter, this.commonState);
+            this.sameResetButton = new MyButton(this.var.sameReset, "reset", () => this.commonState.count = 0);
+
         }
     };
 
@@ -100,29 +135,24 @@
 
     class MyButton extends Component {
         constructor(root, text, onClick) {
+            console.assert(text);
+            console.assert(onClick);
             super(root, `<button>${text}</button>`);
-            this.root.addEventListener('click', () => {
-                if (onClick) onClick()
-                else this.handleClick();
-            });
-        }
-
-        handleClick() {
-            alert('You clicked me!');
+            this.root.addEventListener('click', onClick);
         }
     }
 
     class CounterButton extends Component {
-        constructor(root) {
+        constructor(root, state) {
+            console.assert(Number.isInteger(state.count));
             super(root, `<button class=counterButton></button>`);
-            this.counter = 0;
-            this.setCounter(this.counter);
-            this.root.addEventListener('click', () => this.setCounter(++this.count));
+            this.state = super.substate(state, () => this.update());
+            this.update();
+            this.root.addEventListener('click', () => this.state.count += 1);
         }
 
-        setCounter(value) {
-            this.count = value;
-            this.root.innerText = `Clicked ${value} times`;
+        update() {
+            this.root.innerText = `Clicked ${this.state.count} times`;
         }
     }
 
