@@ -14,19 +14,17 @@
 </head>
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <c app></c>
+    <embed app></c>
 </body>
 <script>
     class Component {
         constructor(root, html) {
             console.assert(root);
             console.assert(html);
-            const body = new DOMParser().parseFromString(html, 'text/html').body;
-            if (body.children.length > 1)
+            const parsed = new DOMParser().parseFromString(html, 'text/html');
+            if (parsed.body.children.length > 1)
                 throw new Error(`More than one child in:\n${html}`);
-            this.root = body.firstChild;
-            for (const attr of this.root.attributes)
-                this.root.setAttribute(attr.nodeName, attr.nodeValue);
+            this.root = parsed.body.firstChild;
             root.replaceWith(this.root);
             this.var = {};
             for (const varel of this.root.querySelectorAll('[var]')) {
@@ -61,11 +59,11 @@
                         `}
                     >
 
-                    <c var=shoppingList></c>
+                    <embed var=shoppingList>
 
-                    <c var=counter1></c>
-                    <c var=counter2></c>
-                    <c var=reset></c>
+                    <embed var=counter1>
+                    <embed var=counter2>
+                    <embed var=reset>
                 </div>
             `);
 
@@ -134,5 +132,5 @@
       imageSize: 90,
     };
 
-    const app = new App(document.querySelector('c[app]'), user);
+    const app = new App(document.querySelector('[app]'), user);
 </script>
