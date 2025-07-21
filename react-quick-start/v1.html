@@ -115,7 +115,6 @@
             for (const sameCounter of this.root.querySelectorAll('.sameCounter'))
                 new CounterButton(sameCounter, this.commonState);
             this.sameResetButton = new MyButton(this.var.sameReset, "reset", () => this.commonState.count = 0);
-
         }
     };
 

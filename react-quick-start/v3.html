@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        .avatar {
+            border-radius: 50%;
+        }
+        button {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+</body>
+<script>
+    const user = {
+      name: 'Hedy Lamarr',
+      imageUrl: 'https://i.imgur.com/yXOvdOSs.jpg',
+      imageSize: 90,
+    };
+
+    const products = [
+      { title: 'Cabbage', isFruit: false, id: 1 },
+      { title: 'Garlic',  isFruit: false, id: 2 },
+      { title: 'Apple',   isFruit: true,  id: 3 },
+    ];
+
+    function mkstate(obj) {
+        if (!obj) obj = {};
+        const proxy = new Proxy(obj, {
+            set(obj, prop, newval, proxy) {
+                const oldval = obj[prop];
+                const res = Reflect.set(...arguments);
+                for (const callback of proxy._subscribers)
+                    callback(oldval, newval);
+                return res;
+            }
+        });
+        proxy._subscribers = [];
+        return proxy;
+    }
+
+    function substate(obj, callback) {
+        console.assert(obj._subscribers, "Not a state object - use mkstate()");
+        obj._subscribers.push(callback);
+    }
+
+    function avatar(user) {
+        return `
+            <h1>${user.name}</h1>
+            <img
+                class=avatar
+                src=${user.imageUrl}
+                alt=${'Photo of ' + user.name}
+                style=${`
+                    width:  ${user.imageSize};
+                    height: ${user.imageSize};
+                `}
+            >
+        `;
+    }
+
+    function productsList(products) {
+        return `
+            <ul>
+                ${products.map(p => `
+                    <li style="color: ${(p.isFruit ? 'magenta' : 'darkgreen')}" >
+                        ${p.title}
+                    </li>
+                `).join('\n')}
+            </ul>
+        `;
+    }
+
+    const countButtonText = (count) => `Clicked ${count} times`;
+    function countButton(el, state) {
+        if (!state) state = mkstate({ count: 0 }); // by default create own state but if given use it
+        el.textContent = countButtonText(state.count);
+        substate(state, () => el.textContent = countButtonText(state.count));
+        el.addEventListener('click', () => state.count += 1);
+        return state;
+    }
+
+    function main() {
+        const body = window.document.body;
+
+        if (!user) {
+            body.insertAdjacentHTML('beforeend', '<div><h1>Log in...</h1> </div>');
+            return;
+        }
+
+        body.insertAdjacentHTML('beforeend', `
+            <main>
+                ${avatar(user)}
+                ${productsList(products)}
+
+                <hr>
+                <button class=own-button></button>
+                <button class=own-button></button>
+                <button id=ownButtonReset>reset</button>
+
+                <hr>
+                <button class=common-button></button>
+                <button class=common-button></button>
+                <button class=common-button></button>
+                <button class=common-button></button>
+                <button id=commonButtonReset>reset</button>
+            </main>
+        `);
+
+        const ownButtonStates = []
+        for (const el of body.getElementsByClassName('own-button')) {
+            ownButtonStates.push(countButton(el));
+        }
+        window.ownButtonReset.addEventListener('click', () => ownButtonStates.forEach(state => state.count = 0));
+
+        const commonButtonState = mkstate({ count: 0 });
+        for (const el of body.getElementsByClassName('common-button')) {
+            countButton(el, commonButtonState);
+        }
+        window.commonButtonReset.addEventListener('click', () => commonButtonState.count = 0);
+    }
+
+    main();
+</script>

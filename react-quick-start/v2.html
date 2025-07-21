@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        .avatar {
+            border-radius: 50%;
+        }
+        button {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+</body>
+<script>
+    const user = {
+      name: 'Hedy Lamarr',
+      imageUrl: 'https://i.imgur.com/yXOvdOSs.jpg',
+      imageSize: 90,
+    };
+
+    const products = [
+      { title: 'Cabbage', isFruit: false, id: 1 },
+      { title: 'Garlic',  isFruit: false, id: 2 },
+      { title: 'Apple',   isFruit: true,  id: 3 },
+    ];
+
+    function main() {
+        const body = window.document.body;
+
+        if (!user) {
+            body.insertAdjacentHTML('beforeend', '<div><h1>Log in...</h1> </div>');
+            return;
+        }
+
+        body.insertAdjacentHTML('beforeend', `
+            <main>
+                <h1>${user.name}</h1>
+                <img
+                    class=avatar
+                    src=${user.imageUrl}
+                    alt=${'Photo of ' + user.name}
+                    style=${`
+                        width:  ${user.imageSize};
+                        height: ${user.imageSize};
+                    `}
+                >
+
+                <ul>
+                    ${products.map(p => `
+                        <li style="color: ${(p.isFruit ? 'magenta' : 'darkgreen')}" >
+                            ${p.title}
+                        </li>
+                    `).join('\n')}
+                </ul>
+
+                <hr>
+                <button class=self-button></button>
+                <button class=self-button></button>
+                <button id=selfButtonReset>reset</button>
+
+                <hr>
+                <button class=common-button></button>
+                <button class=common-button></button>
+                <button class=common-button></button>
+                <button class=common-button></button>
+                <button id=commonButtonReset>reset</button>
+            </main>
+        `);
+
+        const selfButtonResets = []
+        for (const el of body.getElementsByClassName('self-button')) {
+            const state = { count: 0 };
+            el.addEventListener('click', (event) => {
+                event.target.textContent = `Clicked ${state.count} times`;
+                state.count += 1;
+            });
+            selfButtonResets.push(() => {
+                state.count = 0;
+                el.click();
+            });
+            el.click();
+        }
+        window.selfButtonReset.addEventListener('click', () => {
+            for (const reset of selfButtonResets) reset();
+        });
+
+        const commonButtons = []
+        const commonState = { count: 0 };
+        for (const el of body.getElementsByClassName('common-button')) {
+            commonButtons.push(el);
+            el.addEventListener('click', () => {
+                for (const b of commonButtons) b.textContent = `Clicked ${commonState.count} times`;
+                commonState.count += 1;
+            });
+        }
+        commonButtons[0].click();
+        window.commonButtonReset.addEventListener('click', () => {
+            commonState.count = 0;
+            commonButtons[0].click();
+        });
+    }
+
+    main();
+</script>
