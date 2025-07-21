@@ -75,11 +75,11 @@
         `;
     }
 
-    const countButtonText = (count) => `Clicked ${count} times`;
     function countButton(el, state) {
         if (!state) state = mkstate({ count: 0 }); // by default create own state but if given use it
-        el.textContent = countButtonText(state.count);
-        substate(state, () => el.textContent = countButtonText(state.count));
+        const update = () => el.textContent = `Clicked ${state.count} times`;
+        substate(state, update);
+        update();
         el.addEventListener('click', () => state.count += 1);
         return state;
     }
