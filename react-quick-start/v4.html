@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        .avatar {
+            border-radius: 50%;
+        }
+        button {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id=app></div>
+</body>
+<script>
+    const user = {
+      name: 'Hedy Lamarr',
+      imageUrl: 'https://i.imgur.com/yXOvdOSs.jpg',
+      imageSize: 90,
+    };
+
+    const products = [
+      { title: 'Cabbage', isFruit: false, id: 1 },
+      { title: 'Garlic',  isFruit: false, id: 2 },
+      { title: 'Apple',   isFruit: true,  id: 3 },
+    ];
+
+    function mkstate(obj) {
+        if (!obj) obj = {};
+        const proxy = new Proxy(obj, {
+            set(obj, prop, newval, proxy) {
+                const oldval = obj[prop];
+                const res = Reflect.set(...arguments);
+                for (const callback of proxy._subscribers)
+                    callback(oldval, newval);
+                return res;
+            }
+        });
+        proxy._subscribers = [];
+        return proxy;
+    }
+
+    function substate(obj, callback) {
+        console.assert(obj._subscribers, "Not a state object - use mkstate()");
+        obj._subscribers.push(callback);
+    }
+
+    function avatar(root, user) {
+        root.insertAdjacentHTML('beforeend', `
+            <h1>${user.name}</h1>
+            <img
+                class=avatar
+                src=${user.imageUrl}
+                alt=${'Photo of ' + user.name}
+                style=${`
+                    width:  ${user.imageSize};
+                    height: ${user.imageSize};
+                `}
+            >
+        `);
+    }
+
+    function productsList(root, products) {
+        root.insertAdjacentHTML('beforeend', `
+            <ul>
+                ${products.map(p => `
+                    <li style="color: ${(p.isFruit ? 'magenta' : 'darkgreen')}" >
+                        ${p.title}
+                    </li>
+                `).join('\n')}
+            </ul>
+        `);
+    }
+
+    function countButton(root, state) {
+        root.insertAdjacentHTML('beforeend', '<button></button>');
+        const el = root.lastElementChild;
+        if (!state) state = mkstate({ count: 0 }); // by default create own state but if given use it
+        const update = () => el.textContent = `Clicked ${state.count} times`;
+        substate(state, update);
+        update();
+        el.addEventListener('click', () => state.count += 1);
+        return state;
+    }
+
+    function resetButton(root, callback) {
+        root.insertAdjacentHTML('beforeend', '<button>reset</button>');
+        const el = root.lastElementChild;
+        el.addEventListener('click', callback);
+    }
+
+    function main(root) {
+        if (!user) {
+            root.insertAdjacentHTML('beforeend', '<h1>Log in...</h1>');
+            return;
+        }
+
+        avatar(root, user);
+        productsList(root, products);
+
+        root.insertAdjacentHTML('beforeend', '<hr>');
+        const ownButtonStates = [];
+        for (let i = 0; i < 4; i++) {
+            ownButtonStates.push(countButton(root));
+        }
+        resetButton(root, () => ownButtonStates.forEach(state => state.count = 0));
+
+        root.insertAdjacentHTML('beforeend', '<hr>');
+        const commonButtonState = mkstate({ count: 0 });
+        for (let i = 0; i < 4; i++) {
+            countButton(root, commonButtonState);
+        }
+        resetButton(root, () => commonButtonState.count = 0);
+    }
+
+    main(window.app);
+</script>
