@@ -29,6 +29,11 @@
       { title: 'Apple',   isFruit: true,  id: 3 },
     ];
 
+    function insertHtml(root, html) {
+        root.insertAdjacentHTML('beforeend', html);
+        return root.lastElementChild;
+    }
+
     function mkstate(obj) {
         if (!obj) obj = {};
         const proxy = new Proxy(obj, {
@@ -50,7 +55,7 @@
     }
 
     function avatar(root, user) {
-        root.insertAdjacentHTML('beforeend', `
+        insertHtml(root, `
             <h1>${user.name}</h1>
             <img
                 class=avatar
@@ -77,8 +82,7 @@
     }
 
     function countButton(root, state) {
-        root.insertAdjacentHTML('beforeend', '<button></button>');
-        const el = root.lastElementChild;
+        const el = insertHtml(root, '<button></button>');
         if (!state) state = mkstate({ count: 0 }); // by default create own state but if given use it
         const update = () => el.textContent = `Clicked ${state.count} times`;
         substate(state, update);
@@ -88,32 +92,26 @@
     }
 
     function resetButton(root, callback) {
-        root.insertAdjacentHTML('beforeend', '<button>reset</button>');
-        const el = root.lastElementChild;
+        const el = insertHtml(root, '<button>reset</button>');
         el.addEventListener('click', callback);
     }
 
     function main(root) {
         if (!user) {
-            root.insertAdjacentHTML('beforeend', '<h1>Log in...</h1>');
+            insertHtml(root, '<h1>Log in...</h1>');
             return;
         }
 
         avatar(root, user);
         productsList(root, products);
 
-        root.insertAdjacentHTML('beforeend', '<hr>');
-        const ownButtonStates = [];
-        for (let i = 0; i < 4; i++) {
-            ownButtonStates.push(countButton(root));
-        }
+        insertHtml(root, '<hr>');
+        const ownButtonStates = Array.from({length: 4}, () => countButton(root));
         resetButton(root, () => ownButtonStates.forEach(state => state.count = 0));
 
-        root.insertAdjacentHTML('beforeend', '<hr>');
+        insertHtml(root, '<hr>');
         const commonButtonState = mkstate({ count: 0 });
-        for (let i = 0; i < 4; i++) {
-            countButton(root, commonButtonState);
-        }
+        Array.from({length: 4}, () => countButton(root, commonButtonState));
         resetButton(root, () => commonButtonState.count = 0);
     }
 
