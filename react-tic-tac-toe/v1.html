@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        #board span {
+            margin: 1px;
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            display: inline-block;
+            font-size: 45px;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id=app></div>
+</body>
+<script>
+    function insertHtml(root, html) {
+        root.insertAdjacentHTML('beforeend', html);
+        return root.lastElementChild;
+    }
+
+    function makeBoard(root, onClick) {
+        var r,c,board;
+        function makeElement(r,c) {
+            var el = insertHtml(root, '<span></span>');
+            el.addEventListener('click', () => onClick(r, c));
+            return el;
+        }
+        board = [];
+        for (r = 0; r < 3; r++) {
+            board.push([]);
+            for (c = 0; c < 3; c++)
+                board[r].push(makeElement(r, c));
+            insertHtml(root, '<br>');
+        }
+        return board;
+    }
+
+    function checkWinner(b) {
+        // horizontal
+        if (b[0][0].innerText === b[0][1].innerText === b[0][2].innerText) return b[0][0].innerText;
+        if (b[1][0].innerText === b[1][1].innerText === b[1][2].innerText) return b[1][0].innerText;
+        if (b[2][0].innerText === b[2][1].innerText === b[2][2].innerText) return b[2][0].innerText;
+        // vertical
+        if (b[0][0].innerText === b[1][0].innerText === b[2][0].innerText) return b[0][0].innerText;
+        if (b[0][1].innerText === b[1][1].innerText === b[2][1].innerText) return b[0][1].innerText;
+        if (b[0][2].innerText === b[1][2].innerText === b[2][2].innerText) return b[0][2].innerText;
+        // diagonal
+        if (b[0][0].innerText === b[1][1].innerText === b[2][2].innerText) return b[1][1].innerText;
+        if (b[0][2].innerText === b[1][1].innerText === b[2][0].innerText) return b[1][1].innerText;
+        return null;
+    }
+
+    function main(root) {
+        var history, lable, board, turn, turns, winner;
+        turn = 'X';
+        turns = [];
+        winner = null;
+
+        function addHistory(r, c) {
+            var el, i, move;
+            turns.push({r,c});
+            move = turns.length;
+            el = insertHtml(history, `<li><button>Go to move #${move}</button></li>`);
+            el.querySelector('button').addEventListener('click', () => {
+                while (history.children.length > move + 1)
+                    history.children[move+1].remove();
+                for (i = move; i < turns.length; i++)
+                    board[turns[i].r][turns[i].c].innerText = '';
+                turns = turns.slice(0, move);
+                turn = move % 2 === 0 ? 'X' : 'O';
+            });
+        }
+
+        function boardClick(r, c) {
+            if (winner) return;
+            var el = board[r][c];
+            console.assert(el, `Invalid turn: ${r}x${c}`);
+            if (el.innerText !== '') return;
+            el.innerText = turn;
+            turn = turn === 'X' ? 'O' : 'X';
+            addHistory(r, c);
+            label.innerText = `Next player: ${turn}`;
+            winner = checkWinner(board);
+            if (winner) label.innerText = `Winner: ${el.innerText}`;
+        }
+
+        label = insertHtml(root, '<p id=label>Next player: X</p>');
+        board = makeBoard(insertHtml(root, '<div id=board></div>'), boardClick);
+
+        history = insertHtml(root, '<ol id=history></ol>');
+        insertHtml(history, '<li><button>Go to game start</button></li>')
+            .querySelector('button')
+            .addEventListener('click', () => {
+                var r, c, d;
+                d = board.length;
+                for (r = 0; r < d; r++)
+                    for (c = 0; c < d; c++)
+                        board[r][c].innerText = '';
+                turn = 'X';
+                turns.length = 0;
+                winner = null;
+                while (history.children.length > 1)
+                    history.children[1].remove();
+            });
+    }
+
+    main(window.app);
+</script>
