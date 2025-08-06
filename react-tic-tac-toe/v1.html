@@ -69,7 +69,7 @@
             turns.push({r,c});
             move = turns.length;
             el = insertHtml(history, `<li><button>Go to move #${move}</button></li>`);
-            el.querySelector('button').addEventListener('click', () => {
+            el.children[0].addEventListener('click', () => {
                 while (history.children.length > move + 1)
                     history.children[move+1].remove();
                 for (i = move; i < turns.length; i++)

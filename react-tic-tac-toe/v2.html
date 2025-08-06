@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        #board span {
+            margin: 1px;
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            display: inline-block;
+            font-size: 45px;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id=app></div>
+</body>
+<script>
+    function insertHtml(root, html) {
+        root.insertAdjacentHTML('beforeend', html);
+        return root.lastElementChild;
+    }
+
+    function makeBoardField(root, r, c, onClick) {
+        var el = insertHtml(root, '<span></span>');
+        el.addEventListener('click', () => onClick(r, c));
+        return el;
+    }
+
+    function makeBoard(root, size, onClick) {
+        var r,c,el,board;
+        console.assert(size > 2);
+        el = insertHtml(root, '<div id=board></div>');
+        board = [];
+        for (r = 0; r < size; r++) {
+            board.push([]);
+            for (c = 0; c < size; c++)
+                board[r].push(makeBoardField(el, r, c, onClick));
+            insertHtml(el, '<br>');
+        }
+        return board;
+    }
+
+    function movePos(pos, dir) {
+        return {
+            r: pos.r + dir.r,
+            c: pos.c + dir.c,
+        };
+    }
+
+    function reverseDir(dir) {
+        return {
+            r: (-1 * dir.r),
+            c: (-1 * dir.c),
+        };
+    }
+
+    function countInBothDir(board, startPos, dir) {
+        var count, pos, val;
+        val = board[startPos.r][startPos.c].innerText;
+        count = 1;
+        pos = movePos(startPos, dir);
+        while (pos.r >= 0 && pos.r < board.length &&
+               pos.c >= 0 && pos.c < board[0].length &&
+               board[pos.r][pos.c].innerText == val) {
+            count += 1;
+            pos = movePos(pos, dir);
+        }
+        dir = reverseDir(dir);
+        pos = movePos(startPos, dir);
+        while (pos.r >= 0 && pos.r < board.length &&
+               pos.c >= 0 && pos.c < board[0].length &&
+               board[pos.r][pos.c].innerText == val) {
+            count += 1;
+            pos = movePos(pos, dir);
+        }
+        return count;
+    }
+
+    function checkWinner(board, pos) {
+        var val = board[pos.r][pos.c].innerText;
+             if (countInBothDir(board, pos, { r:  0, c: 1 }) >= 3) return val;
+        else if (countInBothDir(board, pos, { r:  1, c: 0 }) >= 3) return val;
+        else if (countInBothDir(board, pos, { r:  1, c: 1 }) >= 3) return val;
+        else if (countInBothDir(board, pos, { r: -1, c: 1 }) >= 3) return val;
+        else return null;
+    }
+
+    function drawBoard(board, label, state) {
+        var r, c, t;
+
+        function sign() {
+            return (t % 2 == 0 ? 'X' : 'O');
+        }
+
+        for (r = 0; r < board.length; r++)
+            for (c = 0; c < board[0].length; c++)
+                board[r][c].innerText = '';
+
+        for (t = 0; t < state.turn; t++)
+            board[state.turns[t].r][state.turns[t].c].innerText = sign();
+
+        if (state.turn > 0 && state.turns.length > state.turn-1) {
+            state.winner = checkWinner(board, state.turns[state.turn-1]);
+            if (state.winner) label.innerText = `Winner: ${state.winner}`;
+            else              label.innerText = `Next player: ${sign()}`;
+        }
+    }
+
+    function makeHistory(history, board, label, state, turn) {
+        insertHtml(history, `<li><button>Go to move #${state.turn}</button></li>`);
+        history.lastElementChild.addEventListener('click', () => {
+            state.winner = null;
+            state.turn = turn;
+            drawBoard(board, label, state);
+        });
+    }
+
+    function turn(r, c, history, board, label, state) {
+        if (state.winner !== null || board[r][c].innerText !== '') return false;
+        state.turns.length = state.turn;
+        state.turns.push({ r, c });
+        state.turn = state.turns.length;
+        while (history.children.length > state.turn)
+            history.lastElementChild.remove();
+        makeHistory(history, board, label, state, state.turn);
+        return true;
+    }
+
+    function main(root, boardSize) {
+        var history, lable, board, state;
+        state = {
+            winner: null,
+            turn: 0,
+            turns: []
+        };
+
+        label = insertHtml(root, '<p id=label></p>');
+        board = makeBoard(root, boardSize, (r, c) => {
+            if (turn(r, c, history, board, label, state)) {
+                drawBoard(board, label, state);
+            }
+        });
+        history = insertHtml(root, '<ol id=history></ol>');
+
+        insertHtml(history, '<li><button>Go to game start</button></li>')
+            .children[0]
+            .addEventListener('click', () => {
+                state.turn = 0;
+                drawBoard(board, label, state);
+            });
+    }
+
+    main(window.app, 3);
+</script>
