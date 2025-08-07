@@ -132,6 +132,10 @@
         return true;
     }
 
+    // TODO(arek): To much passing objects around.
+    // Having them globally or in one big object
+    // would make this all much easier and simpler.
+
     function main(root, boardSize) {
         var history, lable, board, state;
         state = {
@@ -156,5 +160,5 @@
             });
     }
 
-    main(window.app, 3);
+    main(window.app, 6);
 </script>
