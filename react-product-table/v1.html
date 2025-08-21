@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        [data-stocked=false] {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id=app></div>
+</body>
+<script>
+    var products = [
+      { category: "Fruits",     price: "$1", stocked: true,  name: "Apple"        },
+      { category: "Fruits",     price: "$1", stocked: true,  name: "Dragonfruit"  },
+      { category: "Fruits",     price: "$2", stocked: false, name: "Passionfruit" },
+      { category: "Vegetables", price: "$2", stocked: true,  name: "Spinach"      },
+      { category: "Vegetables", price: "$4", stocked: false, name: "Pumpkin"      },
+      { category: "Vegetables", price: "$1", stocked: true,  name: "Peas"         }
+    ];
+
+    function insertHtml(root, html) {
+        root.insertAdjacentHTML('beforeend', html);
+        return root.lastElementChild;
+    }
+
+    function makeSearch(root, onSearch) {
+        var el = insertHtml(root, `
+            <div>
+                <input
+                    type=search
+                    placeholder="Search..."
+                />
+            <div>
+        `);
+        el.addEventListener('input', (e) => onSearch(e.target.value.toLowerCase()));
+    }
+
+    function makeFilters(root, onFilterChange) {
+        var inputs, filters, el;
+        el = insertHtml(root, `
+            <div>
+                <label>
+                    <input type=checkbox name=onlyInStock />
+                    Only show products in stock
+                </label>
+            </div>
+        `);
+
+        filters = {};
+        function onChange(e) {
+            filters[e.target.getAttribute('name')] = e.target.checked;
+            onFilterChange(filters);
+        }
+
+        inputs = el.querySelectorAll('input');
+        for (const input of inputs) {
+            filters[input.getAttribute('name')] = input.checked;
+            input.addEventListener('change', onChange);
+        }
+    }
+
+    function makeTable(root) {
+        var id, categories, prows, el, tbody;
+        el = insertHtml(root, `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        `);
+        tbody = el.lastElementChild;
+
+        id = 0;
+        categories = {};
+        for (const p of products) {
+            p.id = id++;
+            if (!categories[p.category]) categories[p.category] = [];
+            categories[p.category].push(p);
+        }
+
+        prows = []
+        for (const c in categories) {
+            insertHtml(tbody, `<tr> <th colspan=2>${c}</th> </tr>`);
+            for (const p of categories[c]) {
+                prows.push(
+                    insertHtml(tbody, `
+                        <tr data-id=${p.id} data-stocked=${p.stocked}>
+                            <td>${p.name}</td>
+                            <td>${p.price}</td>
+                        </tr>
+                    `));
+            }
+        }
+
+        function updateTable(state) {
+            var p;
+            for (const pr of prows) pr.style.display = "table-row";
+            if (state.search) {
+                for (const pr of prows) {
+                    p = products[pr.dataset.id];
+                    if (!p.name.toLowerCase().includes(state.search))
+                        pr.style.display = "none";
+                }
+            }
+            if (state.filters) {
+                if (state.filters.onlyInStock) {
+                    for (const pr of prows) {
+                        p = products[pr.dataset.id];
+                        if (!p.stocked)
+                            pr.style.display = "none";
+                    }
+                }
+            }
+        }
+
+        return updateTable;
+    }
+
+    function main(root) {
+        var state, updateTable;
+
+        state = {};
+        makeSearch (root, (s) => { state.search  = s; updateTable(state)});
+        makeFilters(root, (f) => { state.filters = f; updateTable(state)});
+
+        updateTable = makeTable(root);
+    }
+
+    main(window.app);
+</script>
