@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        .App {
+            display: flex;
+            column-gap: 2em;
+        }
+        .App .Galery {
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id=app></div>
+</body>
+<script src="./data.js"></script>
+<script>
+    class Component {
+        constructor(root, html) {
+            var i, el;
+            this.vars = { root };
+            i = root.children.length;
+            root.classList.add(this.constructor.name);
+            if (html) root.insertAdjacentHTML('beforeend', html);
+            for (; i < root.children.length; i++) {
+                el = root.children[i];
+                if (el.getAttribute('var'))
+                    this.vars[el.getAttribute('var')] = el;
+                for (el of el.querySelectorAll('[var]'))
+                    this.vars[el.getAttribute('var')] = el;
+            }
+        }
+    }
+
+    class Galery extends Component {
+        constructor(root) {
+            super(root, `
+                <button var=next>Next</button>
+                <h3 var=title></h3>
+                <p var=counter></p>
+                <button var=toggleDetails></button>
+                <p var=details></p>
+                <div>
+                    <img var=img />
+                </div>
+            `);
+            this.i = 0;
+            this.showDetails = false;
+            this.vars.next.addEventListener('click', () => this.next());
+            this.vars.toggleDetails.addEventListener('click', () => this.toggleDetails());
+            this.render();
+        }
+
+        next() {
+            this.i = (this.i + 1) % sculptureList.length;
+            this.render();
+        }
+
+        toggleDetails() {
+            this.showDetails = !this.showDetails;
+            this.render();
+        }
+
+        render() {
+            var s = sculptureList[this.i];
+            this.vars.title.innerText = `${s.name} by ${s.artist}`;
+            this.vars.counter.innerText = `(${this.i+1} of ${sculptureList.length})`;
+            if (this.showDetails) {
+                this.vars.toggleDetails.innerText = 'Hide details';
+                this.vars.details.style.display = '';
+                this.vars.details.innerText = s.description;
+            } else {
+                this.vars.toggleDetails.innerText = 'Show details';
+                this.vars.details.style.display = 'none';
+            }
+            this.vars.img.src = s.url;
+            this.vars.img.setAttribute('alt', s.alt);
+        }
+    }
+
+    class App extends Component {
+        constructor(root) {
+            super(root, `
+                <div var=g1></div>
+                <div var=g2></div>
+            `);
+            new Galery(this.vars.g1);
+            new Galery(this.vars.g2);
+        }
+    };
+
+    const app = new App(window.app);
+</script>
