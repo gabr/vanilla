@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: sans-serif;
+          margin: 20px;
+          padding: 0;
+        }
+
+        .title {
+          color: #007AA3;
+          text-decoration: underline;
+        }
+
+        h1 {
+          margin-top: 0;
+          font-size: 22px;
+        }
+
+        h3 {
+          margin-top: 0;
+          font-size: 18px;
+        }
+
+        .InspirationGenerator {
+          font-family: 'Georgia';
+        }
+
+        .InspirationGenerator .text {
+          font-style: italic;
+        }
+
+        .InspirationGenerator .colorbox {
+          height: 100px;
+          width: 100px;
+          margin: 8px;
+        }
+
+        .copyright {
+          font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id=app></div>
+</body>
+<script>
+    class Component {
+        constructor(root, html) {
+            var i, el;
+            this.vars = { root };
+            i = root.children.length;
+            root.classList.add(this.constructor.name);
+            root.insertAdjacentHTML('beforeend', html);
+            for (; i < root.children.length; i++) {
+                el = root.children[i];
+                if (el.getAttribute('var'))
+                    this.vars[el.getAttribute('var')] = el;
+                for (el of el.querySelectorAll('[var]'))
+                    this.vars[el.getAttribute('var')] = el;
+            }
+        }
+    }
+
+    class InspirationGenerator extends Component {
+        #inspirations = [
+          {type: 'quote', value: "Don’t let yesterday take up too much of today.” — Will Rogers"},
+          {type: 'color', value: "#B73636"},
+          {type: 'quote', value: "Ambition is putting a ladder against the sky."},
+          {type: 'color', value: "#256266"},
+          {type: 'quote', value: "A joy that's shared is a joy made double."},
+          {type: 'color', value: "#F9F2B4"},
+        ];
+
+        constructor(root) {
+            super(root, `
+                <p>Your inspirational <span var=type></span> is:</p>
+                <button var=next>Inspire me again</button>
+                <h3 var=text class=text></h3>
+                <div var=color class=colorbox></div>
+            `);
+            this.i = 0;
+            this.vars.next.addEventListener('click', () => this.next());
+            this.render();
+        }
+
+        next() {
+            this.i = (this.i + 1) % this.#inspirations.length;
+            this.render();
+        }
+
+        render() {
+            var ins = this.#inspirations[this.i];
+            this.vars.text.style.display  = 'none';
+            this.vars.color.style.display = 'none';
+
+            switch (ins.type) {
+                case 'quote':
+                    this.vars.text.style.display = '';
+                    this.vars.text.innerText = ins.value;
+                break;
+
+                case 'color':
+                    this.vars.color.style.display = '';
+                    this.vars.color.style.backgroundColor = ins.value;
+                break;
+
+                default: return;
+            }
+
+            this.vars.type.innerText = ins.type
+        }
+    }
+
+    class App extends Component {
+        constructor(root) {
+            super(root, `
+                <h1 class=title>Get Inspired App</h1>
+                <div var=insp></div>
+                <p class=copyright>©️  2025</p>
+            `);
+            new InspirationGenerator(this.vars.insp);
+        }
+    };
+
+    const app = new App(window.app);
+</script>
