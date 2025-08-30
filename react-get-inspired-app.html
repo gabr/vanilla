@@ -54,21 +54,17 @@
 </body>
 <script>
     function insertHTML(root, html) {
-        var el, vars;
+        var i, si, el, vars;
+        i = root.children.length;
         root.insertAdjacentHTML('beforeend', html);
-        // NOTE: We assume only one element was inserted but we don't verify
-        // that intentionally.  One might just want to insert many elements but
-        // don't do anything with them.  But if they expected to access many
-        // elements they have to wrap them inside one and this error will very
-        // quickly reveal itself without the need for special error handling.
         vars = {};
-        // NOTE: Here we might get { undefined: el } but that's fine.
-        // If someone want's to access the main main element they have to
-        // name it with var=name attribute just like any other element.
-        el = root.lastElementChild;
-        vars[el.getAttribute('var')] = el;
-        for (el of root.lastElementChild.querySelectorAll('[var]'))
-            vars[el.getAttribute('var')] = el;
+        for (; i < root.children.length; i++) {
+            el = root.children[i];
+            if (el.getAttribute('var'))
+                vars[el.getAttribute('var')] = el;
+            for (el of el.querySelectorAll('[var]'))
+                vars[el.getAttribute('var')] = el;
+        }
         return vars;
     }
 
@@ -82,14 +78,13 @@
           {type: 'color', value: "#F9F2B4"},
         ];
 
-        constructor(root, kids) {
+        constructor(root) {
+            root.classList.add('inspirationGenerator');
             this.vars = insertHTML(root, `
-                <div class=inspirationGenerator>
-                    <p>Your inspirational <span var=type></span> is:</p>
-                    <button var=next>Inspire me again</button>
-                    <h3 var=text class=text></h3>
-                    <div var=color class=colorbox></div>
-                </div>
+                <p>Your inspirational <span var=type></span> is:</p>
+                <button var=next>Inspire me again</button>
+                <h3 var=text class=text></h3>
+                <div var=color class=colorbox></div>
             `);
             this.i = 0;
             this.vars.next.addEventListener('click', () => this.next());
@@ -126,9 +121,12 @@
 
     class App{
         constructor(root) {
-            insertHTML(root, `<h1 class=title>Get Inspired App</h1>`);
-            new InspirationGenerator(root);
-            insertHTML(root, `<p class=copyright>©️  2025</p>`);
+            this.vars = insertHTML(root, `
+                <h1 class=title>Get Inspired App</h1>
+                <div var=insp></div>
+                <p class=copyright>©️  2025</p>
+            `);
+            new InspirationGenerator(this.vars.insp);
         }
     };
 
