@@ -34,7 +34,7 @@
 
         constructor(root, name, onDelete) {
             super(root, `
-                <input type=checkbox id=cb${Task.cbId} />
+                <input var=checkbox type=checkbox id=cb${Task.cbId} />
                 <span var=modeView>
                     <label var=viewLabel for=cb${Task.cbId}> ${name} </label>
                     <button var=viewEdit>Edit</button>
@@ -54,6 +54,10 @@
 
         getName() {
             return this.vars.viewLabel.innerText.trim();
+        }
+
+        isChecked() {
+            return this.vars.checkbox.checked;
         }
 
         editMode(on) {
