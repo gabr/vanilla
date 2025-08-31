@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        .TaskList ul { list-style-type: none; padding-left: 0; }
+    </style>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id=app></div>
+</body>
+<script>
+    class Component {
+        constructor(root, html) {
+            var i, el;
+            this.vars = { root };
+            i = root.children.length;
+            root.classList.add(this.constructor.name);
+            root.insertAdjacentHTML('beforeend', html);
+            for (; i < root.children.length; i++) {
+                el = root.children[i];
+                if (el.getAttribute('var'))
+                    this.vars[el.getAttribute('var')] = el;
+                for (el of el.querySelectorAll('[var]'))
+                    this.vars[el.getAttribute('var')] = el;
+            }
+        }
+    }
+
+    class Task extends Component {
+        static cbId = 0;
+
+        constructor(root, name, onDelete) {
+            super(root, `
+                <input type=checkbox id=cb${Task.cbId} />
+                <span var=modeView>
+                    <label var=viewLabel for=cb${Task.cbId}> ${name} </label>
+                    <button var=viewEdit>Edit</button>
+                </span>
+                <span var=modeEdit style=display:none>
+                    <input var=editName type=text value="${name}" />
+                    <button var=editSave>Save</button>
+                </span>
+                <button var=delete>Delete</button>
+            `);
+            Task.cbId += 1;
+            this.modeEdit = false;
+            this.vars.viewEdit.addEventListener('click', () => this.editMode(true));
+            this.vars.editSave.addEventListener('click', () => this.saveEdit());
+            this.vars.delete.addEventListener('click', onDelete);
+        }
+
+        getName() {
+            return this.vars.viewLabel.innerText.trim();
+        }
+
+        editMode(on) {
+            this.modeEdit = on;
+            this.vars.modeView.style.display = this.modeEdit ? 'none' : '';
+            this.vars.modeEdit.style.display = this.modeEdit ? '' : 'none';
+        }
+
+        saveEdit() {
+            if (!this.modeEdit) return false;
+            if (!this.vars.editName.value.trim()) return false;
+            this.vars.viewLabel.innerText = this.vars.editName.value;
+            this.editMode(false);
+            return true;
+        }
+    }
+
+    class TaskList extends Component {
+        constructor(root, title) {
+            super(root, `
+                <h2>${title}</h2>
+                <input var=addInput placeholder="Add task" type=text />
+                <button var=addBtn>Add</button>
+                <ul var=tasks></ul>
+            `);
+            this.tasks = []
+            this.vars.addBtn.addEventListener('click', () => this.addTask(this.vars.addInput.value));
+        }
+
+        addTask(name) {
+            var el, task, trimmed;
+            trimmed = name?.trim();
+            if (!trimmed) return;
+            if (this.tasks.some(t => t.getName() == trimmed)) return;
+            this.vars.tasks.insertAdjacentHTML('beforeend', '<li></li>');
+            el = this.vars.tasks.lastElementChild;
+            task = new Task(el, name, () => {
+                this.tasks = this.tasks.filter(t => t != task);
+                el.remove();
+            });
+            this.tasks.push(task);
+        }
+    }
+
+    class App extends Component {
+        constructor(root) {
+            super(root, `
+                <div var=tasks></div>
+            `);
+            this.tl = new TaskList(this.vars.tasks, "Day off in Kyoto");
+            this.tl.addTask("Philosopher's Path");
+            this.tl.addTask("Visit the temple");
+            this.tl.addTask("Drink matcha");
+        }
+    };
+
+    const app = new App(window.app);
+</script>
